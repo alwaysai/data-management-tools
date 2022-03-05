@@ -67,8 +67,8 @@ class Augmenter:
                     ".xml", "{}.xml".format(aug_str))))
 
     def augment_images(
-        self, aug_all, rotate_180, darken, rotate_90_darken,
-            rotate_180_darken, brighten,
+        self, aug_all, flip_vertical, flip_horizontal, rotate_180,
+            darken, rotate_90_darken, rotate_180_darken, brighten,
             rotate_brighten, blur, rotate_180_blur,
             rotate_270_darken, grayscale, rotate_90_grayscale,
             rotate_180_grayscale, grayscale_darken, grayscale_brighten,
@@ -155,7 +155,29 @@ class Augmenter:
             # container for all the bounding boxes
             bbs = BoundingBoxesOnImage(bbs, image.shape)
 
-            # flip the image 180
+            # flip the image horizontally
+            if flip_horizontal or aug_all:
+                seq = iaa.Fliplr(1.0)
+                flip_horizontal_image, flip_horizontal_bbs = seq(
+                    image=image, bounding_boxes=bbs)
+                self.write_augmented_files(
+                    flip_horizontal_bbs,
+                    flip_horizontal_image,
+                    "_flip_horizontal",
+                    new_annotation_name)
+
+            # flip the image vertically
+            if flip_vertical or aug_all:
+                seq = iaa.Flipud(1.0)
+                flip_vertical_image, flip_vertical_bbs = seq(
+                    image=image, bounding_boxes=bbs)
+                self.write_augmented_files(
+                    flip_vertical_bbs,
+                    flip_vertical_image,
+                    "_flip_vertical",
+                    new_annotation_name)
+
+            # rotate the image 180
             if rotate_180 or aug_all:
                 seq = iaa.Rot90(2)
                 rot180_image, rot180_bbs = seq(image=image, bounding_boxes=bbs)
@@ -176,7 +198,7 @@ class Augmenter:
                     "_darkened",
                     new_annotation_name)
 
-            # flip 90 degrees and darken
+            # rotate 90 degrees and darken
             if rotate_90_darken or aug_all:
                 seq = iaa.Multiply((0.7, 0.8))
                 darkened_image, darkened_bbs = seq(
@@ -190,7 +212,7 @@ class Augmenter:
                     "_darkened_rotate_90",
                     new_annotation_name)
 
-            # flip 180 and darken
+            # rotate 180 and darken
             if rotate_180_darken or aug_all:
                 seq = iaa.Multiply((0.7, 0.8))
                 darkened_image, darkened_bbs = seq(
@@ -215,7 +237,7 @@ class Augmenter:
                     "_brightened",
                     new_annotation_name)
 
-            # flip 180 and brighten
+            # rotate 180 and brighten
             if rotate_brighten or aug_all:
                 seq = iaa.Multiply((1.4, 1.6))
                 brightened_image, brightened_bbs_aug = seq(
@@ -240,7 +262,7 @@ class Augmenter:
                     "_blurred",
                     new_annotation_name)
 
-            # flip 180 and blur
+            # rotate 180 and blur
             if rotate_180_blur or aug_all:
                 seq = iaa.GaussianBlur(2)
                 blurred_image, blurred_bbs_aug = seq(
@@ -254,7 +276,7 @@ class Augmenter:
                     "_blurred_rotate_180",
                     new_annotation_name)
 
-            # flip 270 and darken
+            # rotate 270 and darken
             if rotate_270_darken or aug_all:
                 seq = iaa.Multiply((0.7, 0.8))
                 darkened_image, darkened_bbs = seq(
@@ -279,7 +301,7 @@ class Augmenter:
                     "_grayscale",
                     new_annotation_name)
 
-            # flip 90 and grayscale
+            # rotate 90 and grayscale
             if rotate_90_grayscale or aug_all:
                 seq = iaa.color.ChangeColorspace("GRAY")
                 gray_image, gray_bbs = seq(image=image, bounding_boxes=bbs)
@@ -292,7 +314,7 @@ class Augmenter:
                     "_rotate_90_grayscale",
                     new_annotation_name)
 
-            # flip 180 and grayscale
+            # rotate 180 and grayscale
             if rotate_180_grayscale or aug_all:
                 seq = iaa.color.ChangeColorspace("GRAY")
                 gray_image, gray_bbs = seq(image=image, bounding_boxes=bbs)
@@ -392,6 +414,8 @@ if __name__ == "__main__":
                 '--input_dir', type=str,
                 help='The directory to augment; a zip file of an Annotation folder, in Pascal VOC, and a JPEGImages folder.')
         parser.add_argument('--all', action='store_true')
+        parser.add_argument('--flip_horizontal', action='store_true')
+        parser.add_argument('--flip_vertical', action='store_true')
         parser.add_argument('--rotate_180', action='store_true')
         parser.add_argument('--darken', action='store_true'),
         parser.add_argument('--rotate_90_darken', action='store_true'),
@@ -418,6 +442,8 @@ if __name__ == "__main__":
         augmenter = Augmenter(args.input_dir)
         augmenter.augment_images(
             aug_all=args.all,
+            flip_horizontal=args.flip_horizontal,
+            flip_vertical=args.flip_vertical,
             rotate_180=args.rotate_180,
             darken=args.darken,
             rotate_90_darken=args.rotate_90_darken,
